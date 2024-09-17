@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+
+    - name: Install backend dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Install frontend dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Run backend linting
+      run: flake8 .
+
+    - name: Run frontend linting
+      working-directory: ./frontend
+      run: npm run lint
+
+    - name: Run backend unit tests
+      run: pytest tests/unit
+
+    - name: Run frontend unit tests
+      working-directory: ./frontend
+      run: npm test
+
+    - name: Run integration tests
+      run: pytest tests/integration
+
+    - name: Generate backend coverage report
+      run: |
+        coverage run -m pytest
+        coverage xml
+
+    - name: Generate frontend coverage report
+      working-directory: ./frontend
+      run: npm run test:coverage
+
+    - name: Upload backend coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        file: ./coverage.xml
+        flags: backend
+
+    - name: Upload frontend coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        file: ./frontend/coverage/coverage-final.json
+        flags: frontend
+
+# HUMAN ASSISTANCE NEEDED
+# Please review the following:
+# 1. Ensure that the Python and Node.js versions are correct for your project.
+# 2. Verify that the paths to requirements.txt, frontend directory, and test directories are correct.
+# 3. Confirm that the linting, testing, and coverage commands match your project's setup.
+# 4. Check if you need to add any environment variables or additional setup steps.
